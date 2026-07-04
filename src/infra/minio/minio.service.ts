@@ -26,21 +26,32 @@ export class MinioService implements OnModuleInit {
     const cfg = this.config.get('app.minio');
     this.bucket = cfg.bucket;
     this.presignTtl = cfg.presignTtl;
+
+    if (!cfg.accessKey || !cfg.secretKey) {
+      this.logger.warn('MinIO 未配置，文件相关功能将不可用');
+      return;
+    }
+
+    const secret = this.config.get<string>('app.storage.keyEncSecret');
+    if (!secret || !/^[0-9a-fA-F]{64}$/.test(secret)) {
+      this.logger.warn('STORAGE_KEY_ENC_SECRET 未正确配置，文件相关功能将不可用');
+      return;
+    }
+
     this.encKey = Buffer.from(
-      this.config.get<string>('app.storage.keyEncSecret')!,
+      secret,
       'hex',
     );
 
-    this.client = new MinioClient({
-      endPoint: cfg.endPoint,
-      port: cfg.port,
-      useSSL: cfg.useSSL,
-      accessKey: cfg.accessKey,
-      secretKey: cfg.secretKey,
-    });
-
     // 建桶失败不阻断启动（如登录等非文件操作无需 MinIO）；首次用到文件时再确保桶存在
     try {
+      this.client = new MinioClient({
+        endPoint: cfg.endPoint,
+        port: cfg.port,
+        useSSL: cfg.useSSL,
+        accessKey: cfg.accessKey,
+        secretKey: cfg.secretKey,
+      });
       await this.ensureBucket();
     } catch (e) {
       this.logger.warn(
@@ -51,6 +62,7 @@ export class MinioService implements OnModuleInit {
 
   /** 确保桶存在，文件上传前调用；MinIO 未就绪时抛错由调用方处理 */
   async ensureBucket(): Promise<void> {
+    this.ensureAvailable();
     const exists = await this.client.bucketExists(this.bucket);
     if (!exists) {
       await this.client.makeBucket(this.bucket);
@@ -68,6 +80,8 @@ export class MinioService implements OnModuleInit {
     contentType: string,
     ext: string,
   ): Promise<string> {
+    this.ensureAvailable();
+    await this.ensureBucket();
     const rawPath = `${category}/${crypto.randomUUID()}${ext}`;
     await this.client.putObject(this.bucket, rawPath, buffer, buffer.length, {
       'Content-Type': contentType,
@@ -76,6 +90,7 @@ export class MinioService implements OnModuleInit {
   }
 
   async getObject(objectKey: string): Promise<Buffer> {
+    this.ensureAvailable();
     const rawPath = this.decryptKey(objectKey);
     const stream = await this.client.getObject(this.bucket, rawPath);
     const chunks: Buffer[] = [];
@@ -85,6 +100,7 @@ export class MinioService implements OnModuleInit {
 
   /** 签发短时效预签名URL，供前端临时预览/下载 */
   async presignedGetUrl(objectKey: string, ttlSec?: number): Promise<string> {
+    this.ensureAvailable();
     const rawPath = this.decryptKey(objectKey);
     return this.client.presignedGetObject(
       this.bucket,
@@ -101,6 +117,12 @@ export class MinioService implements OnModuleInit {
     const tag = cipher.getAuthTag();
     // iv(12) + tag(16) + cipher，base64url 便于放URL
     return Buffer.concat([iv, tag, enc]).toString('base64url');
+  }
+
+  private ensureAvailable(): void {
+    if (!this.client) {
+      throw new Error('MinIO is not configured');
+    }
   }
 
   private decryptKey(objectKey: string): string {

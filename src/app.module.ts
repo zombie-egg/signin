@@ -20,6 +20,7 @@ import { SignModule } from './modules/sign/sign.module';
 import { ArchiveModule } from './modules/archive/archive.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -55,5 +56,6 @@ import { NotificationModule } from './modules/notification/notification.module';
     JwtAuthGuard, // 供 main.ts useGlobalGuards 注入
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

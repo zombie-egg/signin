@@ -3,6 +3,7 @@
 ## 1. 环境要求
 - Node.js 20 LTS，pnpm 9（`corepack pnpm`）
 - Docker / docker-compose（PostgreSQL 16、Redis 7、MinIO）
+- Zeabur 部署见 [Zeabur 部署说明](05-zeabur-deploy.md)。
 
 ## 2. 本地/内网启动
 

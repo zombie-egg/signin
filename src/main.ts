@@ -1,4 +1,4 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -15,7 +15,12 @@ async function bootstrap(): Promise<void> {
   const config = app.get(ConfigService);
   const reflector = app.get(Reflector);
 
-  app.setGlobalPrefix(config.get<string>('app.apiPrefix')!);
+  app.setGlobalPrefix(config.get<string>('app.apiPrefix')!, {
+    exclude: [
+      { path: '', method: RequestMethod.GET },
+      { path: 'health', method: RequestMethod.GET },
+    ],
+  });
 
   // 全局 DTO 校验
   app.useGlobalPipes(

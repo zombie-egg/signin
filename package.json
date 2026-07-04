@@ -9,7 +9,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
-    "start:zeabur": "prisma db push --skip-generate && sh -c 'if [ \"${SEED_ON_START:-true}\" = \"true\" ]; then pnpm seed; fi' && node dist/main.js",
+    "start:zeabur": "sh scripts/zeabur-start.sh",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",

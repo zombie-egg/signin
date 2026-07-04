@@ -47,7 +47,11 @@ SIGN_LINK_BASE_URL=https://YOUR_FRONTEND_DOMAIN/sign
 SEED_ON_START=true
 ```
 
+如果 PostgreSQL 服务自动提供的是 `POSTGRES_CONNECTION_STRING` 或 `POSTGRES_URI`，本仓库的 `scripts/zeabur-start.sh` 会自动映射成 `DATABASE_URL`。如果 Redis 自动提供的是 `REDIS_CONNECTION_STRING`，也会自动拆成 `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD`。
+
 `STORAGE_KEY_ENC_SECRET` 必须是 64 位 hex。生产启用后不要更换，否则已上传文件的对象 key 无法解密。
+
+后端至少需要 PostgreSQL 可用才能启动。Redis 和 MinIO 没配齐时服务可以启动，但登录态、限流和文件相关功能会不可用或报错，因此正式使用前仍需补齐。
 
 ## 启动流程
 
