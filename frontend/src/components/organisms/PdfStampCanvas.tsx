@@ -27,6 +27,19 @@ const DT_SEAL = "application/seal-id";
 const DT_FIELD = "application/sign-field";
 const DT_ITEM = "application/item-id";
 
+function normalizeObjectUrl(value?: string) {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    if (url.pathname.startsWith("/esign/")) {
+      return `${window.location.origin}${url.pathname}`;
+    }
+  } catch {
+    // Keep relative URLs as-is.
+  }
+  return value;
+}
+
 export function PdfStampCanvas({
   fileUrl,
   activeSeals,
@@ -42,8 +55,10 @@ export function PdfStampCanvas({
   const [page, setPage] = useState(1);
   const [scale, setScale] = useState(1);
   const [items, setItems] = useState<PlacedItem[]>([]);
+  const [pdfError, setPdfError] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const sealMap = useMemo(() => new Map(activeSeals?.map((seal) => [seal.id, seal]) ?? []), [activeSeals]);
+  const normalizedFileUrl = normalizeObjectUrl(fileUrl);
 
   function sync(next: PlacedItem[]) {
     setItems(next);
@@ -96,7 +111,7 @@ export function PdfStampCanvas({
       if (!seal) return; // 必须是真实印章
       sync([
         ...items,
-        { id: crypto.randomUUID(), kind: "seal", sealId, name: seal.name, previewUrl: seal.previewUrl, page, posX, posY, width: 120, height: 120 },
+        { id: crypto.randomUUID(), kind: "seal", sealId, name: seal.name, previewUrl: normalizeObjectUrl(seal.previewUrl), page, posX, posY, width: 120, height: 120 },
       ]);
       return;
     }
@@ -147,11 +162,29 @@ export function PdfStampCanvas({
         onDragOver={(event) => event.preventDefault()}
         onDrop={handleDrop}
       >
-        {fileUrl ? (
+        {normalizedFileUrl ? (
           <div className="relative mx-auto w-fit border border-ink bg-paper">
-            <Document file={fileUrl} onLoadSuccess={({ numPages }) => setPages(numPages)} loading={<p className="meta-label p-8">PDF 加载中</p>}>
-              <Page pageNumber={page} scale={scale} renderTextLayer={false} renderAnnotationLayer={false} />
-            </Document>
+            {pdfError ? (
+              <iframe
+                title="PDF 预览"
+                src={normalizedFileUrl}
+                className="h-[78vh] w-[72vw] min-w-[720px] border-0 bg-paper"
+              />
+            ) : (
+              <Document
+                key={normalizedFileUrl}
+                file={normalizedFileUrl}
+                onLoadSuccess={({ numPages }) => {
+                  setPages(numPages);
+                  setPdfError(false);
+                }}
+                onLoadError={() => setPdfError(true)}
+                onSourceError={() => setPdfError(true)}
+                loading={<p className="meta-label p-8">PDF 加载中</p>}
+              >
+                <Page pageNumber={page} scale={scale} renderTextLayer={false} renderAnnotationLayer={false} />
+              </Document>
+            )}
             <div ref={overlayRef} className="absolute inset-0">
               {items
                 .filter((item) => item.page === page)
