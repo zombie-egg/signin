@@ -9,6 +9,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
+    "start:zeabur": "prisma db push --skip-generate && sh -c 'if [ \"${SEED_ON_START:-true}\" = \"true\" ]; then pnpm seed; fi' && node dist/main.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
@@ -33,9 +34,12 @@
     "nestjs-pino": "^4.1.0",
     "pdf-lib": "^1.17.1",
     "pino-http": "^10.3.0",
+    "prisma": "^5.22.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.0",
@@ -44,9 +48,6 @@
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^4.17.21",
     "@types/multer": "^1.4.12",
-    "@types/node": "^20.14.0",
-    "prisma": "^5.22.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.5.0"
+    "@types/node": "^20.14.0"
   }
 }
