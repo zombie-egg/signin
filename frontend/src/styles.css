@@ -1,0 +1,197 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&family=Lora:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #111111;
+  background: #f9f9f7;
+  font-family: "Lora", Georgia, serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --paper-dot: url("data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='.35' fill='%23111111' fill-opacity='.08'/%3E%3C/svg%3E");
+  --paper-grid: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0H16V16H0Z' fill='none'/%3E%3Cpath d='M16 0H0V16' fill='none' stroke='%23111111' stroke-opacity='.045' stroke-width='1'/%3E%3C/svg%3E");
+}
+
+* {
+  box-sizing: border-box;
+  border-color: #111111;
+}
+
+html {
+  min-height: 100%;
+  background-color: #f9f9f7;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: #111111;
+  background-color: #f9f9f7;
+  background-image: var(--paper-dot);
+  background-size: 4px 4px;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a,
+[role="button"] {
+  min-height: 44px;
+}
+
+img {
+  filter: grayscale(1);
+  transition: all 200ms ease-out;
+}
+
+img:hover {
+  filter: grayscale(0.5) sepia(0.45) contrast(1.05);
+}
+
+::selection {
+  color: #f9f9f7;
+  background: #111111;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-normal;
+  }
+
+  p {
+    @apply font-body leading-7;
+  }
+}
+
+@layer components {
+  .sharp-corners,
+  .sharp-corners * {
+    border-radius: 0 !important;
+  }
+
+  .newsprint-page {
+    @apply min-h-screen bg-paper text-ink sharp-corners;
+    background-image: var(--paper-dot);
+    background-size: 4px 4px;
+  }
+
+  .newsprint-texture {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .newsprint-texture::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    content: "";
+    background-image: var(--paper-grid);
+    background-size: 16px 16px;
+    opacity: 1;
+  }
+
+  .meta-label {
+    @apply font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink;
+  }
+
+  .meta-value {
+    @apply font-mono text-xs uppercase tracking-[0.12em] text-neutral-600;
+  }
+
+  .headline {
+    @apply font-display text-4xl font-black leading-none md:text-6xl;
+  }
+
+  .section-title {
+    @apply border-b-4 border-ink pb-2 font-display text-2xl font-black leading-none md:text-3xl;
+  }
+
+  .ink-panel {
+    @apply newsprint-texture border border-ink bg-paper;
+  }
+
+  .ink-panel-heavy {
+    @apply newsprint-texture border-4 border-ink bg-paper;
+  }
+
+  .hover-hard {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .hover-hard:hover {
+    box-shadow: 4px 4px 0px 0px #111111;
+    transform: translate(-2px, -2px);
+  }
+
+  .link-ink {
+    @apply font-ui text-sm font-bold uppercase tracking-[0.14em] underline decoration-transparent decoration-4 underline-offset-4 transition-all duration-200 ease-out hover:text-editorial hover:decoration-editorial;
+  }
+
+  .dropcap::first-letter {
+    /* 首字下沉已按需求关闭 */
+    float: none;
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+  }
+
+  .news-table {
+    @apply w-full border-collapse border border-ink bg-paper text-left;
+  }
+
+  .news-table th {
+    @apply border border-ink bg-ink px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-paper;
+  }
+
+  .news-table td {
+    @apply border border-ink px-3 py-2 align-top font-ui text-sm;
+  }
+
+  .halftone-placeholder {
+    background-color: #e5e5e0;
+    background-image: radial-gradient(#111111 0.8px, transparent 0.8px);
+    background-size: 6px 6px;
+  }
+
+  .reverse-block {
+    @apply bg-ink text-paper;
+  }
+}
+
+@layer utilities {
+  .text-justify-news {
+    text-align: justify;
+    text-justify: inter-ideograph;
+  }
+}
+
+@media (max-width: 767px) {
+  .mobile-stack {
+    display: block !important;
+  }
+
+  .mobile-stack > * {
+    border-right-width: 0 !important;
+    border-left-width: 0 !important;
+    border-bottom-width: 1px;
+  }
+
+  .mobile-full-button button,
+  .mobile-full-button a {
+    width: 100%;
+  }
+}

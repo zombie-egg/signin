@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.minio-data/
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+*.log
+coverage/
+.DS_Store

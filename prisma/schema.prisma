@@ -1,0 +1,261 @@
+// 电子签章系统数据模型
+// 约定：主键 uuid；时间 timestamptz；业务表软删除(deletedAt)；审计类表只增不删。
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ 用户与权限 (RBAC) ============
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique // SUPER_ADMIN | CONTRACT_ADMIN | READONLY
+  name        String
+  remark      String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("role")
+}
+
+model Permission {
+  id       String @id @default(uuid()) @db.Uuid
+  code     String @unique // contract:upload / seal:use / ...
+  name     String
+  type     String // menu | button | api
+  parentId String? @map("parent_id") @db.Uuid
+
+  roles    RolePermission[]
+
+  @@map("permission")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  username     String
+  passwordHash String    @map("password_hash")
+  realName     String?   @map("real_name")
+  roleId       String    @map("role_id") @db.Uuid
+  status       Int       @default(1) // 1启用 0禁用
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(6)
+  failCount    Int       @default(0) @map("fail_count")
+  lockedUntil  DateTime? @map("locked_until") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  role          Role           @relation(fields: [roleId], references: [id])
+  seals         Seal[]
+  contracts     Contract[]
+  signTasks     SignTask[]
+  notifications Notification[]
+
+  @@index([username])
+  @@index([roleId])
+  @@map("user")
+}
+
+// ============ 印章 ============
+
+model Seal {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       String
+  type       Int // 1公章 2法人私章 3其他
+  objectKey  String    @map("object_key") // MinIO 加密key(透明PNG,已压缩+盲水印)
+  fileMd5    String    @map("file_md5") @db.Char(32)
+  status     Int       @default(1) // 1启用 0禁用
+  uploaderId String    @map("uploader_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  uploader   User        @relation(fields: [uploaderId], references: [id])
+  usages     SealUsage[]
+
+  @@index([status])
+  @@index([fileMd5])
+  @@map("seal")
+}
+
+// 印章使用日志：只增不删，溯源用
+model SealUsage {
+  id         String   @id @default(uuid()) @db.Uuid
+  sealId     String   @map("seal_id") @db.Uuid
+  signTaskId String?  @map("sign_task_id") @db.Uuid
+  contractId String   @map("contract_id") @db.Uuid
+  operatorId String   @map("operator_id") @db.Uuid
+  page       Int
+  posX       Float    @map("pos_x")
+  posY       Float    @map("pos_y")
+  width      Float
+  height     Float
+  ip         String?
+  usedAt     DateTime @default(now()) @map("used_at") @db.Timestamptz(6)
+
+  seal Seal @relation(fields: [sealId], references: [id])
+
+  @@index([sealId])
+  @@index([signTaskId])
+  @@index([contractId])
+  @@map("seal_usage")
+}
+
+// ============ 合同 ============
+
+model Contract {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       String
+  serialNo   String    @map("serial_no")
+  objectKey  String    @map("object_key")
+  mimeType   String?   @map("mime_type") // 原始文件 MIME，支持任意合同文件类型
+  fileExt    String?   @map("file_ext") // 原始扩展名（含点，如 .pdf .docx）
+  fileMd5    String    @map("file_md5") @db.Char(32)
+  fileSha256 String    @map("file_sha256") @db.Char(64)
+  fileSize   Int       @map("file_size")
+  remark     String?
+  // 0草稿 1待签署 2已签署 3已作废 4已归档
+  status     Int       @default(0)
+  uploaderId String    @map("uploader_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  uploader   User       @relation(fields: [uploaderId], references: [id])
+  signTasks  SignTask[]
+
+  @@index([status, createdAt])
+  @@index([fileMd5])
+  @@index([uploaderId])
+  @@index([serialNo])
+  @@map("contract")
+}
+
+// ============ 签署任务 (核心) ============
+
+model SignTask {
+  id                 String    @id @default(uuid()) @db.Uuid
+  contractId         String    @map("contract_id") @db.Uuid
+  signerName         String    @map("signer_name")
+  signerContact      String    @map("signer_contact")
+  linkToken          String    @unique @map("link_token") @db.Char(64)
+  // 0待签署 1已签署 2已作废 3已过期
+  status             Int       @default(0)
+  deadline           DateTime  @db.Timestamptz(6)
+  revokeReason       String?   @map("revoke_reason")
+  archivedObjectKey  String?   @map("archived_object_key")
+  archivedSha256     String?   @map("archived_sha256") @db.Char(64)
+  creatorId          String    @map("creator_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  contract    Contract      @relation(fields: [contractId], references: [id])
+  creator     User          @relation(fields: [creatorId], references: [id])
+  fields      SignerField[]
+  records     SignRecord[]
+
+  @@index([contractId])
+  @@index([status, deadline])
+  @@index([signerName])
+  @@map("sign_task")
+}
+
+// 待签字段/印章位坐标 (原点为PDF左下角, 单位pt)
+model SignerField {
+  id         String  @id @default(uuid()) @db.Uuid
+  signTaskId String  @map("sign_task_id") @db.Uuid
+  fieldType  Int     @map("field_type") // 1企业印章 2手写签名 3个人印章
+  sealId     String? @map("seal_id") @db.Uuid
+  page       Int
+  posX       Float   @map("pos_x")
+  posY       Float   @map("pos_y")
+  width      Float
+  height     Float
+  required   Boolean @default(true)
+  filled     Boolean @default(false)
+
+  task    SignTask     @relation(fields: [signTaskId], references: [id])
+  records SignRecord[]
+
+  @@index([signTaskId])
+  @@map("signer_field")
+}
+
+// 对方签署回传：只增不删
+model SignRecord {
+  id            String   @id @default(uuid()) @db.Uuid
+  signTaskId    String   @map("sign_task_id") @db.Uuid
+  signerFieldId String   @map("signer_field_id") @db.Uuid
+  signType      Int      @map("sign_type") // 1手写 2个人印章
+  objectKey     String   @map("object_key") // 签名/印章图 MinIO key
+  ip            String?
+  userAgent     String?  @map("user_agent")
+  deviceInfo    String?  @map("device_info")
+  signedAt      DateTime @default(now()) @map("signed_at") @db.Timestamptz(6)
+
+  task  SignTask    @relation(fields: [signTaskId], references: [id])
+  field SignerField @relation(fields: [signerFieldId], references: [id])
+
+  @@index([signTaskId])
+  @@map("sign_record")
+}
+
+// ============ 站内提醒 ============
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid // 接收人(通常任务创建人)
+  type      String // SIGN_COMPLETED | TASK_EXPIRED | ...
+  title     String
+  content   String
+  bizType   String?   @map("biz_type") // sign_task / contract
+  bizId     String?   @map("biz_id") @db.Uuid
+  isRead    Boolean   @default(false) @map("is_read")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  readAt    DateTime? @map("read_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notification")
+}
+
+// ============ 审计日志：只增不删 ============
+
+model AuditLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  operatorId   String?  @map("operator_id") @db.Uuid // 外部签署人为空
+  operatorName String?  @map("operator_name") // 冗余留存
+  action       String // LOGIN / CONTRACT_DELETE / SEAL_USE / TASK_REVOKE ...
+  targetType   String?  @map("target_type") // contract/seal/user/sign_task
+  targetId     String?  @map("target_id") @db.Uuid
+  detail       Json?
+  ip           String?
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([operatorId])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+  @@map("audit_log")
+}
