@@ -20,6 +20,33 @@ interface ApiEnvelope<T> {
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api";
 
+function rewriteObjectUrl(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.pathname.startsWith("/esign/")) {
+      return `${window.location.origin}${url.pathname}`;
+    }
+  } catch {
+    // Not an absolute URL.
+  }
+  return value;
+}
+
+function rewriteObjectUrls<T>(value: T): T {
+  if (typeof value === "string") {
+    return rewriteObjectUrl(value) as T;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => rewriteObjectUrls(item)) as T;
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, rewriteObjectUrls(item)]),
+    ) as T;
+  }
+  return value;
+}
+
 export const api = axios.create({
   baseURL,
   timeout: 20000,
@@ -37,7 +64,7 @@ api.interceptors.response.use(
     if (payload && typeof payload.code === "number" && payload.code !== 0) {
       return Promise.reject(new Error(payload.message || "接口返回业务错误"));
     }
-    return payload?.data ?? response.data;
+    return rewriteObjectUrls(payload?.data ?? response.data);
   },
   async (error: AxiosError<ApiEnvelope<unknown>>) => {
     if (error.response?.status === 401) {
