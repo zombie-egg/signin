@@ -98,6 +98,7 @@
 | POST | `/sign-tasks` | 创建任务，生成一次性签署链接 | `signtask:create` |
 | GET | `/sign-tasks/:id` | 详情（含 signer_field、签署记录） | `signtask:list` |
 | POST | `/sign-tasks/:id/revoke` | 撤回（填原因，失效链接） | `signtask:revoke` |
+| DELETE | `/sign-tasks/:id` | 删除任务（软删除并失效链接） | `signtask:delete` |
 | GET | `/sign-tasks/:id/link` | 重新获取/查看签署链接 | `signtask:create` |
 
 **POST /sign-tasks**

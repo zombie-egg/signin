@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -45,6 +46,14 @@ export class SignTaskController {
   @ApiOperation({ summary: '撤回任务' })
   revoke(@Param('id') id: string, @Body() dto: RevokeTaskDto) {
     return this.task.revoke(id, dto);
+  }
+
+  @Delete(':id')
+  @Permissions('signtask:delete')
+  @Audit({ action: 'TASK_DELETE', targetType: 'sign_task' })
+  @ApiOperation({ summary: '删除签署任务（软删除）' })
+  remove(@Param('id') id: string) {
+    return this.task.remove(id);
   }
 
   @Get(':id/link')

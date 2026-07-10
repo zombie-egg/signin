@@ -110,6 +110,7 @@ export const contractApi = {
   stamp: (id: string, stamps: StampPlacement[]) =>
     request<void>({ method: "POST", url: `/contracts/${id}/stamp`, data: { stamps } }),
   void: (id: string) => request<void>({ method: "POST", url: `/contracts/${id}/void` }),
+  remove: (id: string) => request<void>({ method: "DELETE", url: `/contracts/${id}` }),
 };
 
 export const signTaskApi = {
@@ -125,6 +126,7 @@ export const signTaskApi = {
   detail: (id: string) => request<SignTask>({ method: "GET", url: `/sign-tasks/${id}` }),
   revoke: (id: string, reason: string) =>
     request<void>({ method: "POST", url: `/sign-tasks/${id}/revoke`, data: { reason } }),
+  remove: (id: string) => request<void>({ method: "DELETE", url: `/sign-tasks/${id}` }),
   link: (id: string) => request<{ signUrl: string }>({ method: "GET", url: `/sign-tasks/${id}/link` }),
 };
 

@@ -1,4 +1,4 @@
-import { Eye, FilePlus } from "lucide-react";
+import { Eye, FilePlus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "../../components/atoms/Badge";
@@ -9,11 +9,13 @@ import { contractApi } from "../../lib/api";
 import { formatDate } from "../../lib/utils";
 import { contractStatusText, label } from "../../lib/labels";
 import { useCacheStore } from "../../stores/cache-store";
+import { useAuthStore } from "../../stores/auth-store";
 import type { Contract } from "../../types/domain";
 
 export function ContractsPage() {
   const [contracts, setLocalContracts] = useState<Contract[]>([]);
   const setContracts = useCacheStore((state) => state.setContracts);
+  const hasPermission = useAuthStore((state) => state.hasPermission);
 
   function load(params?: Record<string, unknown>) {
     contractApi
@@ -58,12 +60,27 @@ export function ContractsPage() {
               key: "action",
               title: "操作",
               render: (row) => (
-                <Button asChild size="sm" variant="secondary">
-                  <Link to={`/contracts/${row.id}`}>
-                    <Eye size={14} />
-                    预览
-                  </Link>
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild size="sm" variant="secondary">
+                    <Link to={`/contracts/${row.id}`}>
+                      <Eye size={14} />
+                      预览
+                    </Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="hover:border-editorial hover:bg-editorial hover:text-paper"
+                    disabled={!hasPermission("contract:delete")}
+                    onClick={() => {
+                      if (!window.confirm(`确认删除合同「${row.name}」？该操作会从合同列表中移除。`)) return;
+                      contractApi.remove(row.id).then(() => load());
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    删除
+                  </Button>
+                </div>
               ),
             },
           ]}

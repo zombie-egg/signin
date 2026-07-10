@@ -39,10 +39,12 @@
 | 合同列表 | `GET /api/contracts` | `name,serialNo,status,signerName,startDate,endDate,page,pageSize` |
 | 合同上传 | `POST /api/contracts` multipart | `file,name,serialNo,remark`，前端校验 PDF、30MB |
 | 合同预览 | `GET /api/contracts/:id`, `GET /api/contracts/:id/file` | 详情与预签名 PDF URL |
+| 删除合同 | `DELETE /api/contracts/:id` | `contract:delete` 权限，软删除 |
 | 企业盖章 | `POST /api/contracts/:id/stamp` | `{ stamps: [{ sealId,page,posX,posY,width,height }] }` |
 | 创建任务 | `POST /api/sign-tasks` | `{ contractId,signerName,signerContact,deadline,fields }` |
 | 任务列表 | `GET /api/sign-tasks` | 状态、时间、签署人筛选 |
 | 任务详情 | `GET /api/sign-tasks/:id` | IP、设备、时间戳、SHA256 |
+| 删除签署任务 | `DELETE /api/sign-tasks/:id` | `signtask:delete` 权限，软删除并失效签署链接 |
 | 外部签署 | `GET /api/sign/:token` | 待签合同和字段 |
 | 外部提交 | `POST /api/sign/:token/submit` multipart | `signatures[][fieldId/signType/file]` |
 

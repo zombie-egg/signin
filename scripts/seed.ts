@@ -30,6 +30,7 @@ const PERMISSIONS: { code: string; name: string; type: string }[] = [
   { code: 'signtask:list', name: '签署任务列表', type: 'menu' },
   { code: 'signtask:create', name: '创建签署任务', type: 'button' },
   { code: 'signtask:revoke', name: '撤回签署任务', type: 'button' },
+  { code: 'signtask:delete', name: '删除签署任务', type: 'button' },
   { code: 'archive:list', name: '归档查询', type: 'menu' },
   { code: 'archive:download', name: '下载归档件', type: 'button' },
   { code: 'audit:list', name: '审计日志', type: 'menu' },

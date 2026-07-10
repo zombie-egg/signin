@@ -1,4 +1,4 @@
-import { Download, Eye, RotateCcw } from "lucide-react";
+import { Download, Eye, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "../../components/atoms/Badge";
@@ -70,6 +70,19 @@ export function SignTasksPage() {
                   <Button size="sm" variant="ghost" disabled={row.status !== "SIGNED"}>
                     <Download size={14} />
                     归档
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="hover:border-editorial hover:bg-editorial hover:text-paper"
+                    disabled={!hasPermission("signtask:delete")}
+                    onClick={() => {
+                      if (!window.confirm(`确认删除「${row.contractName ?? row.contractId}」的签署任务？`)) return;
+                      signTaskApi.remove(row.id).then(() => load());
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    删除
                   </Button>
                 </div>
               ),

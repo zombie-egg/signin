@@ -16,6 +16,7 @@ export type PermissionCode =
   | "signtask:list"
   | "signtask:create"
   | "signtask:revoke"
+  | "signtask:delete"
   | "archive:list"
   | "archive:download"
   | "audit:list"

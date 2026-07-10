@@ -171,6 +171,15 @@ export class SignTaskService {
     await this.redis.del(RedisService.signLinkKey(task.linkToken));
   }
 
+  async remove(id: string): Promise<void> {
+    const task = await this.prisma.signTask.findFirst({ where: { id } });
+    if (!task) throw new BizException(ErrorCode.TASK_NOT_FOUND);
+
+    // 删除待签任务时同步使一次性外链失效，避免软删除后 token 继续驻留 Redis。
+    await this.redis.del(RedisService.signLinkKey(task.linkToken));
+    await this.prisma.signTask.delete({ where: { id } });
+  }
+
   async link(id: string): Promise<{ signUrl: string }> {
     const task = await this.prisma.signTask.findFirst({ where: { id } });
     if (!task) throw new BizException(ErrorCode.TASK_NOT_FOUND);

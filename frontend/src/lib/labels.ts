@@ -90,6 +90,7 @@ export const permissionText: Record<string, string> = {
   "signtask:list": "签署任务列表",
   "signtask:create": "创建签署任务",
   "signtask:revoke": "撤回签署任务",
+  "signtask:delete": "删除签署任务",
   "archive:list": "归档查询",
   "archive:download": "下载归档件",
   "audit:list": "审计日志",
